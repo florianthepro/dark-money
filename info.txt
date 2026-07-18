@@ -1,0 +1,235 @@
+PROJECT: Secure Money Transfer
+
+LANGUAGE:
+The complete website, all user-facing texts, labels, descriptions, navigation elements, messages and generated information files must be written in English.
+
+GENERAL PURPOSE:
+The website manages a new digital value unit called "Dark-Money".
+There is exactly one complete unit of Dark-Money.
+All registered and activated users own a percentage share of this single Dark-Money unit.
+
+SETUP FILE:
+The project must be deployed through a single setup.php file.
+The setup.php page must create all required website files automatically, including but not limited to:
+- index file
+- configuration file
+- .htaccess file
+- user/account storage files or database structure
+- free.txt file
+- required backend files
+- required frontend assets
+
+SECURITY ENVIRONMENT:
+The target environment is named "defcon".
+The website must use secure and well-known methods.
+The website must avoid unsafe JavaScript libraries or insecure third-party dependencies.
+The design and implementation must focus on safety, clear structure and reduced attack surface.
+
+SETUP CONFIGURATION:
+During setup, the admin enters two Bitcoin addresses through the setup.php interface:
+
+1. Fee address
+   This address receives the fee part of payments.
+
+2. Dark-Money address
+   This address receives the value backing Dark-Money.
+
+The setup.php file stores these addresses securely in the generated configuration.
+
+BRANDING:
+The website brand is based on:
+- Secure Money Transfer
+- Dark-Money
+
+The website must have clear and recognizable branding.
+The visual style should be clean, consistent and dark-themed.
+
+DESIGN STYLE:
+The website must use a dark, modern and consistent design.
+The interface should be simple and easy to understand.
+Users must not be overwhelmed with too much text or too many controls.
+Navigation must be clear.
+Every page should guide the user with simple and direct actions.
+
+USER REGISTRATION:
+Every new user creates an account.
+
+During registration:
+- A random User ID is generated automatically.
+- The user sets their own password.
+- The user must configure MFA using TOTP.
+- The user must enter their own Bitcoin wallet address.
+
+The User ID is the main identifier for transfers between users.
+
+ACCOUNT ACTIVATION:
+A newly created account is not active immediately.
+To activate the account, the user must pay 11 USD worth of BTC.
+
+The 11 USD payment is split as follows:
+- 10 USD goes to the Dark-Money address.
+- 1 USD goes to the fee address.
+
+This split happens in the background.
+
+DARK-MONEY SHARE MODEL:
+There is exactly one Dark-Money unit.
+
+Each active user owns a percentage share of this one Dark-Money unit.
+
+Examples:
+- If there is 1 active user, this user owns 100%.
+- If there are 2 active users, each user owns 50%.
+- If there are 3 active users, each user owns 33.333...%.
+
+The share distribution changes depending on deposits, withdrawals and internal transfers.
+
+DARK-MONEY VALUE MODEL:
+Dark-Money has a BTC/USD-backed value.
+
+When a new user activates their account with 10 USD going to Dark-Money:
+- The total value backing Dark-Money increases.
+- The ownership percentages are recalculated.
+
+Important example:
+- With 1 user, this user owns 100% of Dark-Money.
+- This 100% represents 10 USD of value.
+- With 2 users, each owns 50%.
+- In that case, each 50% also represents 10 USD of value, because the total value is now 20 USD.
+
+DEPOSIT FUNCTION:
+Users can deposit BTC.
+
+When depositing:
+- The user enters or receives the target payment address.
+- The website continuously checks whether new payments arrive.
+- When a payment is detected, the system determines the related user.
+- The deposited BTC increases the total value of Dark-Money.
+- The user who made the deposit receives a larger share of Dark-Money.
+- All shares are recalculated automatically.
+
+Whenever BTC is converted into Dark-Money value, a 1 USD fee is applied.
+
+WITHDRAWAL FUNCTION:
+Users can withdraw value from their Dark-Money share.
+
+When withdrawing:
+- The user enters an amount in BTC or USD.
+- The user can only withdraw the maximum amount represented by their own share.
+- The payout is sent automatically to the BTC wallet address stored in the user account.
+- The total value of Dark-Money decreases.
+- The withdrawing user owns a smaller share afterward.
+- All shares are recalculated automatically.
+
+Whenever Dark-Money value is converted back into BTC, a 1 USD fee is applied.
+
+INTERNAL TRANSFER FUNCTION:
+Users can transfer value to another user inside the platform.
+
+When transferring:
+- The sender enters the target User ID.
+- The sender enters an amount in BTC or USD.
+- The sender must have enough value in their share.
+- The value is removed from the sender’s share.
+- The value is added to the receiver’s share.
+- The Dark-Money ownership percentages are recalculated.
+
+Transfers between User IDs do not cost a fee.
+
+FEES:
+Fees apply only when value moves between BTC and Dark-Money.
+
+Fee rules:
+- BTC deposit into Dark-Money: 1 USD fee
+- Dark-Money withdrawal into BTC: 1 USD fee
+- Internal User ID transfer: no fee
+
+The fee is sent to the configured fee address.
+
+AUTOMATIC PAYMENT CHECKING:
+The website must continuously or regularly check whether new BTC payments have arrived.
+Incoming payments must be matched to the correct user.
+After a valid payment is detected, the system updates:
+- Dark-Money total value
+- user share
+- fee handling
+- transaction history
+
+USER WALLET:
+Each user must store one personal BTC wallet address.
+Withdrawals are sent automatically to this wallet address.
+
+MFA:
+Each user must configure TOTP-based MFA.
+Login must require:
+- User ID
+- password
+- TOTP code
+
+PASSWORDS:
+Passwords must be stored securely.
+Plain-text passwords must never be stored.
+
+FREE.TXT:
+The setup.php file must generate a file named free.txt.
+
+The free.txt file must contain a clear English explanation of the website purpose.
+This text must be suitable for:
+- being displayed to new visitors on the website
+- being visible as a short description when the website appears in search results
+
+The text should explain the purpose of Secure Money Transfer and Dark-Money in a clean and understandable way.
+
+Example content for free.txt:
+
+Secure Money Transfer is a digital value management platform for Dark-Money. Dark-Money represents one shared digital value unit whose ownership is divided between activated users. Users can create an account, secure it with password and TOTP-based MFA, connect their Bitcoin wallet address, activate their account with a BTC payment, deposit value, withdraw value and transfer value internally to other users by User ID. The platform uses a clear dark interface, simple navigation and transparent value calculations.
+
+MAIN WEBSITE PAGES:
+The generated website should include the required pages for:
+- visitor information
+- registration
+- login
+- MFA setup
+- user dashboard
+- deposit
+- withdrawal
+- internal transfer
+- transaction history
+- account settings
+- logout
+
+DASHBOARD:
+After login, the user dashboard should show only the most important information:
+- User ID
+- current Dark-Money share
+- current estimated value in BTC/USD
+- registered BTC wallet address
+- quick actions for deposit, withdraw and transfer
+- recent transactions
+
+The dashboard must stay clean and not overload the user.
+
+TRANSACTION HISTORY:
+The website should keep a record of important actions:
+- account activation
+- deposits
+- withdrawals
+- internal transfers
+- fee events
+- share recalculations
+
+The transaction history should be readable and clearly structured.
+
+IMPORTANT RULES:
+- There is only one Dark-Money unit.
+- Users own percentages of that one unit.
+- New activated users change the share distribution.
+- Deposits increase the total value of Dark-Money.
+- Withdrawals decrease the total value of Dark-Money.
+- Internal transfers only move value between users.
+- BTC to Dark-Money conversion costs 1 USD fee.
+- Dark-Money to BTC conversion costs 1 USD fee.
+- User ID to User ID transfers cost no fee.
+- The whole website must be in English.
+- The design must be dark, clean and consistent.
+- The setup.php file must generate the full website structure.
