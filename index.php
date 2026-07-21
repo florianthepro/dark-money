@@ -26,6 +26,8 @@ const SMT_ACTIVATE_USD = 10.0;   // credited USD required to activate
 const SMT_FEE_USD      = 1.0;    // flat fiat fee on incoming value
 const SMT_PRICE_TTL    = 180;    // seconds between live price fetches
 const SMT_MAX_SAMPLES  = 240;    // price samples kept for the line fit
+const SMT_MAX_MOVE_DAY = 0.02;   // brake: max platform-rate drift per day (2%)
+const SMT_ACCRUE_CAP   = 2.0;    // brake: max days of drift applied in one step
 const SMT_DEMO         = false;  // true -> allow in-UI deposit simulation
 
 $ROOT = __DIR__;
@@ -176,6 +178,12 @@ function meta_get(string $k): ?string {
     return $v === false ? null : (string)$v;
 }
 
+function meta_set(string $k, string $v): void {
+    db()->prepare("INSERT INTO meta(k,v) VALUES(?,?)
+                   ON CONFLICT(k) DO UPDATE SET v=excluded.v")
+        ->execute([$k, $v]);
+}
+
 function csrf_token(): string {
     if (empty($_SESSION['csrf'])) {
         $_SESSION['csrf'] = bin2hex(random_bytes(16));
@@ -277,27 +285,11 @@ function fetch_live_btc_usd(): ?float {
     return null;
 }
 
-/** Record a fresh sample at most once per TTL. */
-function refresh_samples(): void {
-    $pdo = db();
-    $last = (int)($pdo->query("SELECT MAX(ts) FROM price_samples")->fetchColumn() ?: 0);
-    if (time() - $last < SMT_PRICE_TTL) return;
-    $p = fetch_live_btc_usd();
-    if ($p === null || $p <= 0) return;
-    $pdo->prepare("INSERT OR REPLACE INTO price_samples(ts,price) VALUES(?,?)")
-        ->execute([time(), $p]);
-    // trim history
-    $pdo->exec("DELETE FROM price_samples WHERE ts NOT IN
-        (SELECT ts FROM price_samples ORDER BY ts DESC LIMIT " . SMT_MAX_SAMPLES . ")");
-}
-
 /**
- * Platform BTC/USD rate: least-squares straight line fitted over the live
- * samples and evaluated "now". A single line damps the volatility of the raw
- * feed, so the BTC value on the platform stays very constant.
+ * Least-squares straight line fitted over the live samples, evaluated "now".
+ * This is the *unbraked* target the platform rate is allowed to drift toward.
  */
-function platform_rate(): float {
-    refresh_samples();
+function line_target(): float {
     $rows = db()->query("SELECT ts,price FROM price_samples ORDER BY ts ASC")
                 ->fetchAll();
     $n = count($rows);
@@ -318,6 +310,56 @@ function platform_rate(): float {
     $nowX = (time() - $t0) / 3600.0;
     $val = $m * $nowX + $b;
     return $val > 0 ? $val : $sy / $n;
+}
+
+/**
+ * Refresh at most once per TTL: pull a live sample, then advance the braked
+ * anchor rate toward the fitted line by AT MOST SMT_MAX_MOVE_DAY per day.
+ *
+ * The brake is the point of the whole system: if BTC or the dollar breaks
+ * away, the fitted line jumps, but the anchor only creeps a capped fraction
+ * per day — so the on-platform value stays effectively constant.
+ */
+function refresh_samples(): void {
+    $pdo = db();
+    $last = (int)($pdo->query("SELECT MAX(ts) FROM price_samples")->fetchColumn() ?: 0);
+    if (time() - $last < SMT_PRICE_TTL) return;
+
+    $p = fetch_live_btc_usd();
+    if ($p !== null && $p > 0) {
+        $pdo->prepare("INSERT OR REPLACE INTO price_samples(ts,price) VALUES(?,?)")
+            ->execute([time(), $p]);
+        $pdo->exec("DELETE FROM price_samples WHERE ts NOT IN
+            (SELECT ts FROM price_samples ORDER BY ts DESC LIMIT " . SMT_MAX_SAMPLES . ")");
+    }
+
+    $target = line_target();
+    if ($target <= 0) return;
+
+    $anchor = meta_get('rate_value');
+    if ($anchor === null) {                       // first ever anchor
+        meta_set('rate_value', (string)$target);
+        meta_set('rate_ts', (string)time());
+        return;
+    }
+    $anchor   = (float)$anchor;
+    $anchorTs = (int)(meta_get('rate_ts') ?: time());
+    $days     = min(SMT_ACCRUE_CAP, max(0.0, (time() - $anchorTs) / 86400.0));
+    $allowed  = $anchor * SMT_MAX_MOVE_DAY * $days;      // capped daily drift
+    $new      = max($anchor - $allowed, min($target, $anchor + $allowed));
+    meta_set('rate_value', (string)$new);
+    meta_set('rate_ts', (string)time());
+}
+
+/**
+ * Platform BTC/USD rate: the braked anchor. Between refreshes it does not
+ * move at all, and across days it can drift by at most SMT_MAX_MOVE_DAY.
+ */
+function platform_rate(): float {
+    refresh_samples();
+    $r = meta_get('rate_value');
+    if ($r !== null && (float)$r > 0) return (float)$r;
+    return line_target();                          // fallback before first anchor
 }
 
 /* --------------------------------------------------------- money helpers */

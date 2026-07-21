@@ -33,12 +33,21 @@ Wert der zugehörigen Konto-ID.
 - **Prozente tauchen nie auf** (intern an Anteil/BTC gekoppelt, aber nie sichtbar).
 - **BTC** erscheint **nur als Info** — wie viel USD der BTC auf der Plattform entspricht.
 
-## Konstanter Wert (die Gerade)
+## Konstanter Wert (Gerade + Tages-Bremse)
 
-Aus dem **Live-BTC-Kurs** wird per **Ausgleichsgerade** (Least-Squares über die
-Kurs-Samples) eine **Gerade abgeleitet** und im Jetzt ausgewertet. Dieser Linien-Wert
-ist der Plattform-Kurs. Dadurch bleibt der **BTC auf der Plattform sehr konstant**,
-statt die Volatilität des Rohkurses zu übernehmen.
+Ziel ist **Wertkonstanz**: Wenn BTC oder der Dollar wegbricht, soll der Wert auf der
+Plattform **gleich bleiben**.
+
+1. Aus dem **Live-BTC-Kurs** wird per **Ausgleichsgerade** (Least-Squares über die
+   Kurs-Samples) eine Gerade abgeleitet und im Jetzt ausgewertet — das ist das *Ziel*.
+2. Der tatsächliche Plattform-Kurs ist ein **gebremster Anker**: er darf sich pro Tag
+   nur um einen **gedeckelten Maximalbetrag** (Standard **2 %/Tag**) auf dieses Ziel
+   zubewegen. Zwischen den Aktualisierungen bewegt er sich gar nicht.
+
+Springt die Gerade also merklich nach oben oder unten (Crash oder Spike), wird die
+Bewegung **abgebremst** — pro Tag ist nur die maximale Drift erlaubt. So bleibt der
+Wert auf der Plattform effektiv konstant, unabhängig davon, was BTC oder der Dollar
+kurzfristig machen.
 
 ---
 
