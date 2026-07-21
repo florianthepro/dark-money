@@ -11,10 +11,13 @@
  *   - Percentages never appear.
  *   - BTC appears only in the info view (how much USD the platform BTC equals).
  *
- * Value rule:
- *   - A straight line is fitted (least-squares) over the live BTC/USD samples.
- *   - That line is evaluated "now" and used as the platform rate, so the
- *     BTC value on the platform stays very constant.
+ * Value rule (constancy):
+ *   - A straight line is fitted (least-squares) over the live BTC/USD samples
+ *     and evaluated "now" -> this is the target.
+ *   - The platform rate is a braked anchor that may drift toward that target by
+ *     at most SMT_MAX_MOVE_DAY per day. If BTC or the dollar breaks away, the
+ *     value on the platform still moves only a capped amount per day, so it
+ *     stays effectively constant.
  */
 
 declare(strict_types=1);
@@ -646,10 +649,11 @@ if ($action === 'info') {
     echo '<div class="panel"><div class="muted">PLATFORM BTC (total)</div>';
     echo '<div class="big">' . rtrim(rtrim(number_format($totalBtc, 8), '0'), '.') . ' BTC</div>';
     echo '<div class="muted">equals</div><div class="big">' . usd(sat_to_usd($totalSat, $rate)) . '</div></div>';
-    echo '<div class="panel"><div class="muted">LIVE RATE (fitted line)</div>';
+    echo '<div class="panel"><div class="muted">PLATFORM RATE (braked)</div>';
     echo '<div class="big">' . usd($rate) . ' <span class="muted">/ BTC</span></div>';
-    echo '<p class="muted">The platform rate is a straight line fitted over the live BTC/USD feed, '
-       . 'evaluated now. This keeps the on-platform BTC value very constant.</p></div>';
+    echo '<p class="muted">A straight line is fitted over the live BTC/USD feed; the platform '
+       . 'rate drifts toward it by at most ' . rtrim(rtrim(number_format(SMT_MAX_MOVE_DAY * 100, 2), '0'), '.')
+       . '% per day. Even if BTC or the dollar breaks away, the on-platform value stays constant.</p></div>';
     echo '<nav><a href="?a=home">&larr; back</a></nav>';
     layout_bottom();
     exit;
