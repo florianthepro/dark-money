@@ -1,6 +1,6 @@
 # Dark-Money — Vision
 
-> Nur die Kernidee. Keine konkrete technische Umsetzung, kein Code.
+> Die Kernidee der Währung. Umgesetzt als **eine einzige `index.php`** (single file).
 
 ---
 
@@ -8,12 +8,10 @@
 
 Dark-Money ist eine Währung, die vollständig auf einer Website als **Wallet** lebt.
 
-Man registriert sich mit seiner **eigenen öffentlichen Wallet-Adresse**. Aus dieser
-Registrierung wird eine **Konto-ID generiert**. Diese Konto-ID ist gleichzeitig die
-gespeicherte Adresse: **Adresse = Konto-ID**.
-
-Sobald eine Zahlung von dieser Adresse eingeht, steigt der Wert der zugehörigen
-Konto-ID. Die Konto-ID ist damit der Träger des Werts.
+Man registriert sich mit seiner **eigenen öffentlichen Wallet-Adresse**. Daraus wird
+eine **Konto-ID generiert**. Diese Konto-ID ist zugleich die gespeicherte Adresse:
+**Adresse = Konto-ID**. Sobald eine Zahlung von dieser Adresse eingeht, steigt der
+Wert der zugehörigen Konto-ID.
 
 ---
 
@@ -21,20 +19,43 @@ Konto-ID. Die Konto-ID ist damit der Träger des Werts.
 
 1. **Registrierung** mit eigener öffentlicher Wallet-Adresse.
 2. Es wird eine **Konto-ID generiert** (= gespeicherte Adresse).
-3. Nutzer richtet **Passwort** und **MFA** ein.
+3. Nutzer richtet **Passwort** und **MFA** (TOTP) ein.
 4. Zur **Aktivierung** muss zunächst mindestens **10 $** eingezahlt werden
-   (effektiv **11 $** wegen der Gebühr).
-5. Danach ist das Konto aktiv und die Website dient als **vollständiges Wallet**.
-6. Jede eingehende Zahlung von der hinterlegten Adresse **erhöht den Wert der Konto-ID**.
+   (effektiv **11 $** wegen der **1 $** Gebühr).
+5. Danach ist das Konto aktiv und die Seite ist ein **vollständiges Wallet**.
+6. Jede eingehende Zahlung von der Adresse **erhöht den Wert der Konto-ID**.
 
 ---
 
-## Kernpunkte
+## Oberfläche
 
-- Registrierung über eigene öffentliche Wallet-Adresse
-- Automatisch generierte Konto-ID
-- Konto-ID = gespeicherte Adresse
-- Passwort + MFA verpflichtend
-- Aktivierung ab 10 $ (effektiv 11 $ inkl. Gebühr)
-- Website ist ein komplettes Wallet
-- Zahlungseingang von der Adresse → mehr Wert auf der Konto-ID
+- Die Oberfläche zeigt **nur USD**.
+- **Prozente tauchen nie auf** (intern an Anteil/BTC gekoppelt, aber nie sichtbar).
+- **BTC** erscheint **nur als Info** — wie viel USD der BTC auf der Plattform entspricht.
+
+## Konstanter Wert (die Gerade)
+
+Aus dem **Live-BTC-Kurs** wird per **Ausgleichsgerade** (Least-Squares über die
+Kurs-Samples) eine **Gerade abgeleitet** und im Jetzt ausgewertet. Dieser Linien-Wert
+ist der Plattform-Kurs. Dadurch bleibt der **BTC auf der Plattform sehr konstant**,
+statt die Volatilität des Rohkurses zu übernehmen.
+
+---
+
+## Technik (single file)
+
+Alles steckt in `index.php`:
+
+- **Ein File**, kein Framework, oldschool DEFCON-Terminal (schwarz, grün).
+- **Selbst-Installation** beim ersten Start: legt `data/` (SQLite) und `.htaccess`
+  (root + data) an.
+- **Selbstheilung live**: bei jedem Request wird die `.htaccess`-Härtung geprüft und
+  bei Entfernung sofort wiederhergestellt (mit Logeintrag).
+- Gehärtet für Apache: Passwort-Hashing, TOTP-MFA, CSRF, Session-Hardening,
+  Security-Header, gesperrtes `data/`-Verzeichnis.
+- **Kein Admin-Konto. Keine Private Keys gespeichert.** Bestätigte Gutschriften nur
+  über einen server-seitigen Ingest-Endpoint (`?ingest`) mit Key.
+
+Aufruf: `index.php` auf einen PHP-8-Server (SQLite-PDO, ausgehendes HTTPS für den
+Live-Kurs) legen und im Browser öffnen. `data/` und `.htaccess` werden zur Laufzeit
+erzeugt und sind nicht Teil des Repos.
